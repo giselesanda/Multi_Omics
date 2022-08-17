@@ -1,0 +1,679 @@
+## Script for ALSPAC for the Multi_Omics Interaction analysis 
+## Here we have analyzed Internalizing, Externalizing and Total Problems as Y 
+
+library(jtools)
+library(interactions)
+library(ggplot2)
+library(foreign)
+library(readr)
+library(ggpubr)
+library(corrplot)
+library(Hmisc)
+library(dplyr)
+library(tidyverse)
+library(caret)
+library(leaps)
+library(data.table)
+library(sjPlot)
+library(sjmisc)
+library(olsrr)
+library(DescTools)
+library(dotwhisker)
+library(coefplot) 
+
+
+
+
+
+dados_temp <- read_csv("/data1/meaneylab/gsanda/Alspac_data_base.csv", show_col_types = FALSE)
+
+
+dados_temp$InternalizingSDQ47m<-dados_temp$j557a+dados_temp$j557d
+dados_temp$InternalizingSDQ81m<-dados_temp$kq346c+dados_temp$kq346e
+dados_temp$InternalizingSDQ9y7m<-dados_temp$ku707b+dados_temp$ku709b
+dados_temp$InternalizingSDQ11y8m<-dados_temp$kw6602b+dados_temp$kw6604b
+dados_temp$InternalizingSDQ13y1m<-dados_temp$ta7025a+dados_temp$ta7025d
+dados_temp$InternalizingSDQ16y6m<-dados_temp$tc4025a+dados_temp$tc4025d
+dados_temp$InternalizingSDQ8y1m<-dados_temp$n8365a+dados_temp$n8365d
+
+dados_temp$ExternalizingSDQ47m<-dados_temp$j557b+dados_temp$j557c+dados_temp$j557e
+dados_temp$ExternalizingSDQ81m<-dados_temp$kq346a+dados_temp$kq346b+dados_temp$kq346d
+dados_temp$ExternalizingSDQ9y7m<-dados_temp$ku705b+dados_temp$ku706b+dados_temp$ku708b
+dados_temp$ExternalizingSDQ11y8m<-dados_temp$kw6600b+dados_temp$kw6601b+dados_temp$kw6603b
+dados_temp$ExternalizingSDQ13y1m<-dados_temp$ta7025b+dados_temp$ta7025c+dados_temp$ta7025e
+dados_temp$ExternalizingSDQ16y6m<-dados_temp$tc4025b+dados_temp$tc4025c+dados_temp$tc4025e
+dados_temp$ExternalizingSDQ8y1m<-dados_temp$n8365b+dados_temp$n8365c+dados_temp$n8365e
+
+dados_temp$TotalProblemsSDQ47m<-dados_temp$j557f
+dados_temp$TotalProblemsSDQ81m<-dados_temp$kq346f
+dados_temp$TotalProblemsSDQ9y7m<-dados_temp$ku710b
+dados_temp$TotalProblemsSDQ11y8m<-dados_temp$kw6605b
+dados_temp$TotalProblemsSDQ13y1m<-dados_temp$ta7025f
+dados_temp$TotalProblemsDQ16y6m<-dados_temp$tc4025f
+dados_temp$TotalProblemsDQ8y1m<-dados_temp$n8365f
+
+
+list.Y.Tot <- c( 
+  'kj643',
+  'kj644',
+  'kj645',
+  'kj646',
+  'kj647',
+  'j557a',
+  'j557b',
+  'j557c',
+  'j557d',
+  'j557e',
+  'j557f',
+  'kq346a',
+  'kq346b',
+  'kq346c',
+  'kq346d',
+  'kq346e',
+  'kq346f',
+  'ku705b',
+  'ku706b',
+  'ku707b',
+  'ku708b',
+  'ku709b',
+  'ku710b',
+  'kw6600b',
+  'kw6601b',
+  'kw6602b',
+  'kw6603b',
+  'kw6604b',
+  'kw6605b',
+  'log_ku673b',
+  'ta7025a',
+  'ta7025b',
+  'ta7025c',
+  'ta7025d',
+  'ta7025e',
+  'ta7025f',
+  'tc4025a',
+  'tc4025b',
+  'tc4025c',
+  'tc4025d',
+  'tc4025e',
+  'tc4025f',
+  'log_YPB5180',
+  'n8365a',
+  'n8365b',
+  'n8365c',
+  'n8365d',
+  'n8365e',
+  'n8365f',
+  'log_FJCI050',
+  'FJCI106',
+  'log_FJCI1000',
+  'FJCI1001',
+  'FJCI1002',
+  'FJCI1003',
+  'f7dd302_percentage',
+  'f7dd303_percentage',
+  'f7dd304_percentage',
+  'f7dd305',
+  'fddd301_percentage',
+  'fddd302_percentage',
+  'fddd303_percentage',
+  'fddd304',
+  'log_f9dx135',
+  'log_f9dx136',
+  'fems028a',
+  'log_fedx135',
+  'log_fedx136',
+  'fg3136',
+  'log_Insulin_BBS',
+  'log_insulin_F9',
+  'log_insulin_TF3',
+  'log_insulin_TF4',
+  'log_Leptin_CIF61',
+  'log_LEPTIN_f9',
+  'log_HBA1C_f9',
+  'log_Glucose_BBS',
+  'log_glucose_TF3',
+  'log_glucose_TF4',
+  'log_c205n3_F7',
+  'log_c226n3_F7',
+  'log_c205n3pc_F7',
+  'log_c226n3pc_F7',
+  'log_FAw3_F7',
+  'log_FAw6_F7',
+  'log_DHA_TF3',
+  'log_DHA_TF4',
+  'log_FAw3_TF4',
+  'log_FAw6_TF4',
+  'log_HOMAIR_BBS',
+  'log_HOMAIR_TF3',
+  'log_HOMAIR_TF4',
+  'log_CRP_f9',
+  'log_IL6_f9',
+  'log_crp_TF3',
+  'log_CRP_TF4',
+  "cobalamin_F7",
+  "folate_F7",
+  'f8ba030_2cat',
+  'f8ba031_2cat',
+  'f8ba032_2cat',
+  'f8ba033_2cat',
+  # 'f8ba036',
+  'f8ba036_2cat',
+  'fdcm217_prop',
+  'fdcm218',
+  'fdcm219_prop',
+  'fdcm220',
+  'cf778',
+  'cf779',
+  'cf780',
+  'cf781',
+  'cf782',
+  'cf783',
+  'log_vitdd3_F11',
+  'sqrt_vitdd3_F7',
+  'log_vitdd3_F9',
+  'log_vitdtot_F11',
+  'sqrt_vitdtot_F7',
+  'log_vitdtot_F9',
+  'log_cf076',
+  'log_cf078',
+  'log_cf079',
+  'log_f7ms018',
+  'log_f9ms018',
+  'log_ff2020',
+  'log_fg3120',
+  'log_fh4020',
+  'fh6875',
+  'fh6876',
+  'fh6877',
+  'fh6878',
+  'fh6879',
+  'fh6881',
+  'fh6882',
+  'fh6891',
+  'fh6892',
+  'fh6898',
+  'FJCI106',
+  'FJCI350',
+  'FJCI451',
+  'FJCI501',
+  'FJCI550',
+  'FJCI604',
+  'FJCI605',
+  'FJCI606',
+  'FKDQ1030',
+  'FKDQ1050',
+  'FKDQ1060',
+  'FKDQ1070',
+  'FKDQ1080',
+  'FKDQ1110',
+  'InternalizingSDQ8',
+  'InternalizingSDQ9',
+  'InternalizingSDQ11',
+  'InternalizingSDQ13',
+  'InternalizingSDQ16',
+  'ExternalizingSDQ8',
+  'ExternalizingSDQ9',
+  'ExternalizingSDQ11',
+  'ExternalizingSDQ13',
+  'ExternalizingSDQ16',
+  'InternalizingSDQ47m',
+'InternalizingSDQ81m',
+  'InternalizingSDQ9y7m',
+'InternalizingSDQ47m',
+  'InternalizingSDQ13y1m',
+'InternalizingSDQ16y6m',
+  'InternalizingSDQ8y1m',
+'ExternalizingSDQ47m',
+  'ExternalizingSDQ81m',
+'ExternalizingSDQ9y7m',
+  'ExternalizingSDQ11y8m',
+'ExternalizingSDQ13y1m',
+  'ExternalizingSDQ8y1m',
+'TotalProblemsSDQ47m',
+  'TotalProblemsSDQ81m',
+'TotalProblemsSDQ9y7m',
+  'TotalProblemsSDQ11y8m',
+'TotalProblemsSDQ13y1m',
+  'TotalProblemsDQ16y6m',
+'TotalProblemsDQ8y1m',
+  'ExternalizingSDQ16y6m',
+
+)
+
+
+###########   Moderator  ##############
+#    A_index_prenatal,
+
+
+
+###########   Covariates  ##############
+#    Gender
+#   'PC1',
+#   'PC2',
+#   'PC3',
+#    PC1_F7,
+#    PC2_F7,
+#    PC3_F7,
+
+
+
+
+#	InternalizingSDQ11	ND_Score_F7	ePRS1_c886NACCstan	prenatal
+# Change for different internalizing/externalizing/total problems ND_Score_F7	ePRS1_c886NACCstan	prenatal
+
+# just change the second line below for the different things 
+dados_temp$Y <- NA
+dados_temp$Y <- dados_temp$TotalProblemsDQ8y1m
+
+dados_temp$X <- NA
+dados_temp$X <- dados_temp$ND_Score_F7
+
+dados_temp$ePRS <- NA
+dados_temp$ePRS <- dados_temp$ePRS1_c886NACCstan
+
+dados_temp$A_index <- NA
+dados_temp$A_index <- dados_temp$A_index_prenatal
+
+dados_temp$Z_X <- NA
+dados_temp$Z_X <- (dados_temp$X - mean(dados_temp$X, na.rm = TRUE)) / sd(dados_temp$X, na.rm = TRUE)
+
+vars <- c("Y", "X" , "Z_X" , "ePRS", "A_index","PC1" , "PC2" , "PC3" , "PC1_F7" , "PC2_F7" , "PC3_F7" , "Gender")
+
+
+
+
+
+################################################################################################################       
+
+Regress  <- lm(Y ~ X + ePRS * A_index + PC1 + PC2 + PC3 + PC1_F7 + PC2_F7 + PC3_F7 + Gender, data = dados)
+
+################################################################################################################ 
+
+summ_output <- summary(Regress)
+
+n_row_coef <-  nrow(summ_output$coef)
+Sample_size <- summ_output$df[2] + n_row_coef
+
+VIF(Regress) # Multicollinearity test (VIFs)
+
+ols_coll_diag(Regress) # Multicollinearity test (VIFs)
+ols_test_breusch_pagan(Regress) # Test of Homo/Heteroskedasticity
+ols_plot_dfbetas(Regress)  # Influential observations
+ols_plot_cooksd_bar(Regress)  # Influential observations
+ols_plot_cooksd_chart(Regress)   # Influential observations
+ols_plot_resid_stand(Regress)   # Influential observations
+ols_plot_resid_lev(Regress)   # Influential observations
+ols_plot_resid_pot(Regress)   # Influential observations
+
+##########       identify outliers      ##############
+cooksd <- cooks.distance(Regress)
+influential <- as.numeric(names(cooksd)[(cooksd > (4/Sample_size))]) 
+
+#################    Formatted Tables   #################################
+tab_model(Regress)
+
+
+#######################  Graphing Coefficients and CIs #################### 
+
+dwplot(Regress)
+coefplot(Regress) 
+
+plot_summs(Regress, scale = TRUE, plot.distributions = TRUE, inner_ci_level = .9)
+
+
+
+
+title_name <- "Y ~ X + ePRS + ePRS x A_index + PC_cel + PC_pop + Gender"  
+
+temp_inter_plot <- interact_plot(Regress, pred = "A_index", modx = "ePRS"
+                                 ,modx.values = "plus-minus", main.title = title_name)
+ggsave(temp_inter_plot, file=paste0("/data1/meaneylab/gsanda/Alspac_Externalizing/interact_plot_", title_name ,".png"), width = 14, height = 10, units = "cm")
+
+
+temp_plot_model <- plot_model(Regress, type = "pred", terms = c("ePRS [all]", "A_index"), title = title_name)
+ggsave(temp_plot_model, file=paste0("/data1/meaneylab/gsanda/Alspac_Externalizing/plot_model_", title_name ,".png"), width = 14, height = 10, units = "cm")
+
+dados$Y_pred <- NA
+dados$Y_pred <- predict(Regress, newdata= dados)
+gout <- ggplot(dados, aes(y=Y, x=Y_pred)) +
+  geom_point() +
+  labs(y='Actual Values', x='Predicted Values', title=title_name)
+temp_plot <- gout + geom_abline(intercept = 0, slope = 1, color="red", size=1.5)
+
+ggsave(temp_plot, file=paste0("/data1/meaneylab/gsanda/Alspac_Externalizing/plot_", title_name ,".png"), width = 14, height = 10, units = "cm")
+
+
+zz <- paste0("/data1/meaneylab/gsanda/Alspac_Externalizing/Summary_",title_name,".txt")
+sink(file = zz)
+print(title_name)
+print(summ(Regress))
+print (summ_output)
+sink()
+
+# 1 ###############################################################################################################       
+
+Regress  <- lm(Y ~ Z_X + ePRS * A_index + PC1 + PC2 + PC3 + PC1_F7 + PC2_F7 + PC3_F7 + Gender, data = dados)
+
+################################################################################################################ 
+
+summ_output <- summary(Regress)
+
+n_row_coef <-  nrow(summ_output$coef)
+Sample_size <- summ_output$df[2] + n_row_coef
+
+VIF(Regress) # Multicollinearity test (VIFs)
+
+ols_coll_diag(Regress) # Multicollinearity test (VIFs)
+ols_test_breusch_pagan(Regress) # Test of Homo/Heteroskedasticity
+ols_plot_dfbetas(Regress)  # Influential observations
+ols_plot_cooksd_bar(Regress)  # Influential observations
+ols_plot_cooksd_chart(Regress)   # Influential observations
+ols_plot_resid_stand(Regress)   # Influential observations
+ols_plot_resid_lev(Regress)   # Influential observations
+ols_plot_resid_pot(Regress)   # Influential observations
+
+##########       identify outliers      ##############
+cooksd <- cooks.distance(Regress)
+influential <- as.numeric(names(cooksd)[(cooksd > (4/Sample_size))]) 
+
+#################    Formatted Tables   #################################
+tab_model(Regress)
+
+
+#######################  Graphing Coefficients and CIs #################### 
+
+dwplot(Regress)
+coefplot(Regress) 
+
+plot_summs(Regress, scale = TRUE, plot.distributions = TRUE, inner_ci_level = .9)
+
+
+
+
+title_name <- "Y ~ ZX + ePRS + ePRS x A_index + PC_cel + PC_pop + Gender"  
+
+temp_inter_plot <- interact_plot(Regress, pred = "A_index", modx = "ePRS"
+                                 ,modx.values = "plus-minus", main.title = title_name)
+ggsave(temp_inter_plot, file=paste0("/data1/meaneylab/gsanda/Alspac_Externalizing/interact_plot_", title_name ,".png"), width = 14, height = 10, units = "cm")
+
+
+temp_plot_model <- plot_model(Regress, type = "pred", terms = c("ePRS [all]", "A_index"), title = title_name)
+ggsave(temp_plot_model, file=paste0("/data1/meaneylab/gsanda/Alspac_Externalizing/plot_model_", title_name ,".png"), width = 14, height = 10, units = "cm")
+dados$Y_pred <- NA
+dados$Y_pred <- predict(Regress, newdata= dados)
+gout <- ggplot(dados, aes(y=Y, x=Y_pred)) +
+  geom_point() +
+  labs(y='Actual Values', x='Predicted Values', title=title_name)
+temp_plot <- gout + geom_abline(intercept = 0, slope = 1, color="red", size=1.5)
+
+ggsave(temp_plot, file=paste0("/data1/meaneylab/gsanda/Alspac_Externalizing/plot_", title_name ,".png"), width = 14, height = 10, units = "cm")
+
+
+zz <- paste0("/data1/meaneylab/gsanda/Alspac_Externalizing/Summary_",title_name,".txt")
+sink(file = zz)
+print(title_name)
+print(summ(Regress))
+print (summ_output)
+sink()
+
+# 2 ###############################################################################################################       
+
+Regress  <- lm(Y ~ Z_X + ePRS + PC1 + PC2 + PC3 + PC1_F7 + PC2_F7 + PC3_F7 + Gender, data = dados)
+
+################################################################################################################ 
+
+summ_output <- summary(Regress)
+
+n_row_coef <-  nrow(summ_output$coef)
+Sample_size <- summ_output$df[2] + n_row_coef
+
+VIF(Regress) # Multicollinearity test (VIFs)
+
+ols_coll_diag(Regress) # Multicollinearity test (VIFs)
+ols_test_breusch_pagan(Regress) # Test of Homo/Heteroskedasticity
+ols_plot_dfbetas(Regress)  # Influential observations
+ols_plot_cooksd_bar(Regress)  # Influential observations
+ols_plot_cooksd_chart(Regress)   # Influential observations
+ols_plot_resid_stand(Regress)   # Influential observations
+ols_plot_resid_lev(Regress)   # Influential observations
+ols_plot_resid_pot(Regress)   # Influential observations
+
+##########       identify outliers      ##############
+cooksd <- cooks.distance(Regress)
+influential <- as.numeric(names(cooksd)[(cooksd > (4/Sample_size))]) 
+
+#################    Formatted Tables   #################################
+tab_model(Regress)
+
+
+#######################  Graphing Coefficients and CIs #################### 
+
+dwplot(Regress)
+coefplot(Regress) 
+
+plot_summs(Regress, scale = TRUE, plot.distributions = TRUE, inner_ci_level = .9)
+
+
+
+
+title_name <- "Y ~ ZX + ePRS +  PC_cel + PC_pop + Gender" 
+
+dados$Y_pred <- NA
+dados$Y_pred <- predict(Regress, newdata= dados)
+gout <- ggplot(dados, aes(y=Y, x=Y_pred)) +
+  geom_point() +
+  labs(y='Actual Values', x='Predicted Values', title=title_name)
+temp_plot <- gout + geom_abline(intercept = 0, slope = 1, color="red", size=1.5)
+
+ggsave(temp_plot, file=paste0("/data1/meaneylab/gsanda/Alspac_Externalizing/plot_", title_name ,".png"), width = 14, height = 10, units = "cm")
+
+
+zz <- paste0("/data1/meaneylab/gsanda/Alspac_Externalizing/Summary_",title_name,".txt")
+sink(file = zz)
+print(title_name)
+print(summ(Regress))
+print (summ_output)
+sink()
+
+## 3 ##############################################################################################################       
+
+Regress  <- lm(Y ~ ePRS * A_index + PC1 + PC2 + PC3 + PC1_F7 + PC2_F7 + PC3_F7 + Gender, data = dados)
+
+################################################################################################################ 
+
+summ_output <- summary(Regress)
+
+n_row_coef <-  nrow(summ_output$coef)
+Sample_size <- summ_output$df[2] + n_row_coef
+
+VIF(Regress) # Multicollinearity test (VIFs)
+
+ols_coll_diag(Regress) # Multicollinearity test (VIFs)
+ols_test_breusch_pagan(Regress) # Test of Homo/Heteroskedasticity
+ols_plot_dfbetas(Regress)  # Influential observations
+ols_plot_cooksd_bar(Regress)  # Influential observations
+ols_plot_cooksd_chart(Regress)   # Influential observations
+ols_plot_resid_stand(Regress)   # Influential observations
+ols_plot_resid_lev(Regress)   # Influential observations
+ols_plot_resid_pot(Regress)   # Influential observations
+
+##########       identify outliers      ##############
+cooksd <- cooks.distance(Regress)
+influential <- as.numeric(names(cooksd)[(cooksd > (4/Sample_size))]) 
+
+#################    Formatted Tables   #################################
+tab_model(Regress)
+
+
+#######################  Graphing Coefficients and CIs #################### 
+
+dwplot(Regress)
+coefplot(Regress) 
+
+plot_summs(Regress, scale = TRUE, plot.distributions = TRUE, inner_ci_level = .9)
+
+
+title_name <- "Y ~ ePRS x A_index + PC_cel + PC_pop + Gender" 
+
+dados$Y_pred <- NA
+dados$Y_pred <- predict(Regress, newdata= dados)
+gout <- ggplot(dados, aes(y=Y, x=Y_pred)) +
+  geom_point() +
+  labs(y='Actual Values', x='Predicted Values', title=title_name)
+temp_plot <- gout + geom_abline(intercept = 0, slope = 1, color="red", size=1.5)
+
+ggsave(temp_plot, file=paste0("/data1/meaneylab/gsanda/Alspac_Externalizing/plot_", title_name ,".png"), width = 14, height = 10, units = "cm")
+
+
+zz <- paste0("/data1/meaneylab/gsanda/Alspac_Externalizing/Summary_",title_name,".txt")
+sink(file = zz)
+print(title_name)
+print(summ(Regress))
+print (summ_output)
+sink()
+
+## 4 ##############################################################################################################       
+
+Regress  <- lm(Y ~ Z_X + PC1 + PC2 + PC3 + PC1_F7 + PC2_F7 + PC3_F7 + Gender, data = dados)
+
+################################################################################################################ 
+
+summ_output <- summary(Regress)
+
+n_row_coef <-  nrow(summ_output$coef)
+Sample_size <- summ_output$df[2] + n_row_coef
+
+VIF(Regress) # Multicollinearity test (VIFs)
+
+ols_coll_diag(Regress) # Multicollinearity test (VIFs)
+ols_test_breusch_pagan(Regress) # Test of Homo/Heteroskedasticity
+ols_plot_dfbetas(Regress)  # Influential observations
+ols_plot_cooksd_bar(Regress)  # Influential observations
+ols_plot_cooksd_chart(Regress)   # Influential observations
+ols_plot_resid_stand(Regress)   # Influential observations
+ols_plot_resid_lev(Regress)   # Influential observations
+ols_plot_resid_pot(Regress)   # Influential observations
+
+##########       identify outliers      ##############
+cooksd <- cooks.distance(Regress)
+influential <- as.numeric(names(cooksd)[(cooksd > (4/Sample_size))]) 
+
+#################    Formatted Tables   #################################
+tab_model(Regress)
+
+
+#######################  Graphing Coefficients and CIs #################### 
+
+dwplot(Regress)
+coefplot(Regress) 
+
+plot_summs(Regress, scale = TRUE, plot.distributions = TRUE, inner_ci_level = .9)
+
+
+
+
+title_name <- "Y ~ ZX + PC_cel + PC_pop + Gender" 
+
+dados$Y_pred <- NA
+dados$Y_pred <- predict(Regress, newdata= dados)
+gout <- ggplot(dados, aes(y=Y, x=Y_pred)) +
+  geom_point() +
+  labs(y='Actual Values', x='Predicted Values', title=title_name)
+temp_plot <- gout + geom_abline(intercept = 0, slope = 1, color="red", size=1.5)
+
+ggsave(temp_plot, file=paste0("/data1/meaneylab/gsanda/Alspac_Externalizing/plot_", title_name ,".png"), width = 14, height = 10, units = "cm")
+
+
+zz <- paste0("/data1/meaneylab/gsanda/Alspac_Externalizing/Summary_",title_name,".txt")
+sink(file = zz)
+print(title_name)
+print(summ(Regress))
+print (summ_output)
+sink()
+
+## 5 ##############################################################################################################       
+
+Regress  <- lm(Y ~ ePRS + PC1 + PC2 + PC3 + PC1_F7 + PC2_F7 + PC3_F7 + Gender, data = dados)
+
+################################################################################################################ 
+
+summ_output <- summary(Regress)
+
+n_row_coef <-  nrow(summ_output$coef)
+Sample_size <- summ_output$df[2] + n_row_coef
+
+VIF(Regress) # Multicollinearity test (VIFs)
+
+ols_coll_diag(Regress) # Multicollinearity test (VIFs)
+ols_test_breusch_pagan(Regress) # Test of Homo/Heteroskedasticity
+ols_plot_dfbetas(Regress)  # Influential observations
+ols_plot_cooksd_bar(Regress)  # Influential observations
+ols_plot_cooksd_chart(Regress)   # Influential observations
+ols_plot_resid_stand(Regress)   # Influential observations
+ols_plot_resid_lev(Regress)   # Influential observations
+ols_plot_resid_pot(Regress)   # Influential observations
+
+##########       identify outliers      ##############
+cooksd <- cooks.distance(Regress)
+influential <- as.numeric(names(cooksd)[(cooksd > (4/Sample_size))]) 
+
+#################    Formatted Tables   #################################
+tab_model(Regress)
+
+
+#######################  Graphing Coefficients and CIs #################### 
+
+dwplot(Regress)
+coefplot(Regress) 
+
+plot_summs(Regress, scale = TRUE, plot.distributions = TRUE, inner_ci_level = .9)
+
+
+title_name <- "Y ~ ePRS + PC_cel + PC_pop + Gender" 
+
+dados$Y_pred <- NA
+dados$Y_pred <- predict(Regress, newdata= dados)
+gout <- ggplot(dados, aes(y=Y, x=Y_pred)) +
+  geom_point() +
+  labs(y='Actual Values', x='Predicted Values', title=title_name)
+temp_plot <- gout + geom_abline(intercept = 0, slope = 1, color="red", size=1.5)
+
+ggsave(temp_plot, file=paste0("/data1/meaneylab/gsanda/Alspac_Externalizing/plot_", title_name ,".png"), width = 14, height = 10, units = "cm")
+
+
+zz <- paste0("/data1/meaneylab/gsanda/Alspac_Externalizing/Summary_",title_name,".txt")
+sink(file = zz)
+print(title_name)
+print(summ(Regress))
+print (summ_output)
+sink()
+
+
+regress.mod1 <- lm(Y ~ Z_X + ePRS * A_index + PC1 + PC2 + PC3 + PC1_F7 + PC2_F7 + PC3_F7 + Gender, data = dados)
+regress.mod2 <- lm(Y ~ Z_X + ePRS + PC1 + PC2 + PC3 + PC1_F7 + PC2_F7 + PC3_F7 + Gender, data = dados)
+regress.mod3 <- lm(Y ~ ePRS * A_index + PC1 + PC2 + PC3 + PC1_F7 + PC2_F7 + PC3_F7 + Gender, data = dados)
+regress.mod4 <- lm(Y ~ Z_X + PC1 + PC2 + PC3 + PC1_F7 + PC2_F7 + PC3_F7 + Gender, data = dados)
+regress.mod5 <- lm(Y ~ ePRS + PC1 + PC2 + PC3 + PC1_F7 + PC2_F7 + PC3_F7 + Gender, data = dados)
+
+
+# Compare models
+
+anova1 <- anova(regress.mod5, regress.mod2)
+anova2 <- anova(regress.mod4, regress.mod2)
+anova3 <- anova(regress.mod5, regress.mod3)
+anova4 <- anova(regress.mod3, regress.mod1)
+anova5 <- anova(regress.mod2, regress.mod1)
+
+
+zz <- paste0("/data1/meaneylab/gsanda/Alspac_Externalizing/Summary_Anova.txt")
+sink(file = zz)
+print(anova1)
+print(anova2)
+print(anova3)
+print(anova4)
+print(anova5)
+
+sink()
+
+Sys.sleep(2)
+
