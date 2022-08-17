@@ -1,0 +1,604 @@
+## Script for MAVAN analysis of Multi-Omics Interaction 
+## Here we analyzed Internalzing, Externalizing and Total Problems 
+
+library(jtools)
+library(interactions)
+library(ggplot2)
+library(foreign)
+library(readr)
+library(ggpubr)
+library(corrplot)
+library(Hmisc)
+library(dplyr)
+library(tidyverse)
+library(caret)
+library(leaps)
+library(data.table)
+library(sjPlot)
+library(sjmisc)
+library(olsrr)
+library(DescTools)
+library(dotwhisker)
+library(coefplot) 
+
+
+
+
+
+dados_temp <- read_csv("/data1/meaneylab/gsanda/MAVAN/MAVAN_data.csv", show_col_types = FALSE)
+
+
+
+
+###########   Moderator  ##############
+#    A_index_prenatal,
+
+
+
+###########   Covariates  ##############
+#    gender
+#   'PC1',
+#   'PC2',
+#   'PC3',
+#    PC1_F7,
+#    CC_PC2,
+#    CC_PC3,
+
+list.Y<-c('sc1raw.48m',
+          'sc2raw.48m',
+          'sc3raw.48m',
+          'log.sc3raw.48m',
+          'sc4raw.48m',
+          'log.sc4raw.48m',
+          'sc5raw.48m',
+          'log.sc5raw.48m',
+          'sc6raw.48m',
+          'sc7raw.48m',
+          'dsm1raw.48m',
+          'dsm2raw.48m',
+          'log.dsm2raw.48m',
+          'dsm3raw.48m',
+          'dsm4raw.48m',
+          'dsm5raw.48m',
+          'sc8raw.48m',
+          'sc9raw.48m',
+          'sc10raw.48m',
+          'sc1raw.60m',
+          'log.sc1raw.60m',
+          'sc2raw.60m',
+          'log.sc2raw.60m',
+          'sc3raw.60m',
+          'sq.sc3raw.60m',
+          'log.sc3raw.60m',
+          'sc4raw.60m',
+          'log.sc4raw.60m',
+          'sc5raw.60m',
+          'log.sc5raw.60m',
+          'sc6raw.60m',
+          'sc7raw.60m',
+          'dsm1raw.60m',
+          'log.dsm1raw.60m',
+          'dsm2raw.60m',
+          'log.dsm2raw.60m',
+          'dsm3raw.60m',
+          'dsm4raw.60m',
+          'dsm5raw.60m',
+          'sc8raw.60m',
+          'sc9raw.60m',
+          'sc10raw.60m',
+          'sdq_mother_total_difficulties_score.60m',               ## SDQ
+          'sdq_mother_emotional_symptoms_score.60m',
+          'sdq_mother_conduct_problems_score.60m',
+          'sdq_mother_hyperactivity_score.60m',
+          'sdq_mother_peer_problems_score.60m',
+          'sq.sdq_mother_peer_problems_score.60m',
+          'log.sdq_mother_peer_problems_score.60m',
+          'sdq_mother_prosocial_score.60m',
+          'sdq_mother_total_difficulties_score.72m',
+          'sdq_mother_emotional_symptoms_score.72m',
+          'sdq_mother_conduct_problems_score.72m',
+          'sdq_mother_hyperactivity_score.72m',
+          'sdq_mother_peer_problems_score.72m',
+          'log.sdq_mother_peer_problems_score.72m',
+          'sdq_mother_prosocial_score.72m',
+          'sensitivity_punishment',  ## SPSRQ child
+          'sensitivity_reward',
+          'sensitivity_impulsivity',
+          'sensitivity_drive',
+          'IST_Mean_box_opening_lantecy_fixed_CORRECT.48m',
+          'log.IST_Mean_box_opening_lantecy_fixed_CORRECT.48m',
+          'mean_Pcorrect_fixed_recomputed.48m',
+          'mean_Palternate_fixed_recomputed.48m',
+          'IST_Mean_box_opening_latency_decreasing_CORRECT.48m',
+          'log.IST_Mean_box_opening_latency_decreasing_CORRECT.48m',
+          'mean_Pcorrect_decreasing_recomputed.48m',
+          'mean_Palternate_decreasing_recomputed.48m',
+          'IST_Mean_box_opening_lantecy_fixed_CORRECT.60m',
+          'log.IST_Mean_box_opening_lantecy_fixed_CORRECT.60m',
+          'mean_Pcorrect_fixed_recomputed.60m',
+          'mean_Palternate_fixed_recomputed.60m',
+          'logrev.mean_Palternate_fixed_recomputed.60m',
+          'IST_Mean_box_opening_latency_decreasing_CORRECT.60m',
+          'log.IST_Mean_box_opening_latency_decreasing_CORRECT.60m',
+          'mean_Pcorrect_decreasing_recomputed.60m',
+          'mean_Palternate_decreasing_recomputed.60m',
+          'IST_Mean_box_opening_lantecy_fixed_CORRECT.72m',
+          'log.IST_Mean_box_opening_lantecy_fixed_CORRECT.72m',
+          'mean_Pcorrect_fixed_recomputed.72m',
+          'logrev.mean_Pcorrect_fixed_recomputed.72m',
+          'mean_Palternate_fixed_recomputed.72m',
+          'logrev.mean_Palternate_fixed_recomputed.72m',
+          'IST_Mean_box_opening_latency_decreasing_CORRECT.72m',
+          'log.IST_Mean_box_opening_latency_decreasing_CORRECT.72m',
+          'mean_Pcorrect_decreasing_recomputed.72m',
+          'mean_Palternate_decreasing_recomputed.72m',
+          'SSTSSD50last20subblocks.48m',
+          'SSTSSRTlast20subblocks.48m',
+          'log.SSTSSRTlast20subblocks.48m',
+          'SSTProportionofsuccessfulstopslast20subblocks.48m',
+          'SSTDirectionerrorsonstoptrials.48m',
+          'log.SSTDirectionerrorsonstoptrials.48m',
+          'SSTDirectionerrorsongotrials.48m',
+          'log.SSTDirectionerrorsongotrials.48m',
+          'SSTMediancorrectRTonGOtrials.48m',
+          'log.SSTMediancorrectRTonGOtrials.48m',
+          'SSTSSD50last20subblocks.60m',
+          'SSTSSRTlast20subblocks.60m',
+          'SSTProportionofsuccessfulstopslast20subblocks.60m',
+          'SSTDirectionerrorsonstoptrials.60m',
+          'log.SSTDirectionerrorsonstoptrials.60m',
+          'SSTDirectionerrorsongotrials.60m',
+          'log.SSTDirectionerrorsongotrials.60m',
+          'SSTMediancorrectRTonGOtrials.60m',
+          'SSTSSD50last20subblocks.72m',
+          'SSTSSRTlast20subblocks.72m',
+          'SSTProportionofsuccessfulstopslast20subblocks.72m',
+          'SSTDirectionerrorsonstoptrials.72m',
+          'log.SSTDirectionerrorsonstoptrials.72m',
+          'SSTDirectionerrorsongotrials.72m',
+          'log.SSTDirectionerrorsongotrials.72m',
+          'SSTMediancorrectRTonGOtrials.72m',
+          'snack_delay_average_code3_36m',   ## Snack delay
+          'logrev.snack_delay_average_code3_36m',
+          'snack_delay_average_code2n3_36m',
+          'logrev.snack_delay_average_code2n3_36m',
+          "number_knowledge_score_total.48m",
+          "number_knowledge_score_total.60m",
+          "lollipop_total_score.48m",
+          "lollipop_total_score.60m",
+          "PPVT_score.48m",
+          "PPVT_score.60m",
+          "score_oppositional_defiant_disorder.72m",
+          "score_conduct_disorder.72m",
+          "score_ADHD.72m",
+          "IEDEDSerrors.48m",
+          "IEDEDSerrors.60m",
+          "IEDEDSerrors.72m",
+          "IEDPreEDerrors.48m",
+          "IEDPreEDerrors.60m",
+          "IEDPreEDerrors.72m",
+          "IEDTotalerrorsadjusted.48m",
+          "IEDTotalerrorsadjusted.60m",
+          "IEDTotalerrorsadjusted.72m",
+          "koala_total_score.60m",)
+
+
+
+# just change the second line below for the different things 
+dados_temp$Y <- NA
+dados_temp$Y <- dados_temp$sc10raw.60m
+
+dados_temp$X <- NA
+dados_temp$X <- dados_temp$ND_Score
+
+dados_temp$ePRS <- NA
+dados_temp$ePRS <- dados_temp$standard_c919_gsanda_ND.190.CpG.mavan.kids.info08.hard.pfc
+
+
+
+dados_temp$A_index <- NA
+dados_temp$A_index <- dados_temp$A_index_prenatal
+
+dados_temp$Z_X <- NA
+dados_temp$Z_X <- (dados_temp$X - mean(dados_temp$X, na.rm = TRUE)) / sd(dados_temp$X, na.rm = TRUE)
+
+vars <- c("Y", "X" , "Z_X" , "ePRS", "A_index","PC1" , "PC2" , "PC3" , "CC_PC1" , "CC_PC2" , "CC_PC3" , "gender")
+
+dados <- na.omit(dados_temp [vars])
+
+
+
+################################################################################################################       
+
+Regress  <- lm(Y ~ X + ePRS * A_index + PC1 + PC2 + PC3 + CC_PC1 + CC_PC2 + CC_PC3 + gender, data = dados)
+
+################################################################################################################ 
+
+summ_output <- summary(Regress)
+
+n_row_coef <-  nrow(summ_output$coef)
+Sample_size <- summ_output$df[2] + n_row_coef
+
+VIF(Regress) # Multicollinearity test (VIFs)
+
+ols_coll_diag(Regress) # Multicollinearity test (VIFs)
+ols_test_breusch_pagan(Regress) # Test of Homo/Heteroskedasticity
+ols_plot_dfbetas(Regress)  # Influential observations
+ols_plot_cooksd_bar(Regress)  # Influential observations
+ols_plot_cooksd_chart(Regress)   # Influential observations
+ols_plot_resid_stand(Regress)   # Influential observations
+ols_plot_resid_lev(Regress)   # Influential observations
+ols_plot_resid_pot(Regress)   # Influential observations
+
+##########       identify outliers      ##############
+cooksd <- cooks.distance(Regress)
+influential <- as.numeric(names(cooksd)[(cooksd > (4/Sample_size))]) 
+
+#################    Formatted Tables   #################################
+tab_model(Regress)
+
+
+#######################  Graphing Coefficients and CIs #################### 
+
+dwplot(Regress)
+coefplot(Regress) 
+
+plot_summs(Regress, scale = TRUE, plot.distributions = TRUE, inner_ci_level = .9)
+
+
+
+
+title_name <- "Y ~ X + ePRS + ePRS x A_index + PC_cel + PC_pop + gender"  
+
+temp_inter_plot <- interact_plot(Regress, pred = "A_index", modx = "ePRS"
+                                 ,modx.values = "plus-minus", main.title = title_name)
+ggsave(temp_inter_plot, file=paste0("/data1/meaneylab/gsanda/MAVAN/interact_plot_", title_name ,".png"), width = 14, height = 10, units = "cm")
+
+
+temp_plot_model <- plot_model(Regress, type = "pred", terms = c("ePRS [all]", "A_index"), title = title_name)
+ggsave(temp_plot_model, file=paste0("/data1/meaneylab/gsanda/MAVAN/plot_model_", title_name ,".png"), width = 14, height = 10, units = "cm")
+
+dados$Y_pred <- NA
+dados$Y_pred <- predict(Regress, newdata= dados)
+gout <- ggplot(dados, aes(y=Y, x=Y_pred)) +
+  geom_point() +
+  labs(y='Actual Values', x='Predicted Values', title=title_name)
+temp_plot <- gout + geom_abline(intercept = 0, slope = 1, color="red", size=1.5)
+
+ggsave(temp_plot, file=paste0("/data1/meaneylab/gsanda/MAVAN/plot_", title_name ,".png"), width = 14, height = 10, units = "cm")
+
+
+zz <- paste0("/data1/meaneylab/gsanda/MAVAN/Summary_",title_name,".txt")
+sink(file = zz)
+print(title_name)
+print(summ(Regress))
+print (summ_output)
+sink()
+
+# 1 ###############################################################################################################       
+
+Regress  <- lm(Y ~ Z_X + ePRS * A_index + PC1 + PC2 + PC3 + CC_PC1+ CC_PC2 + CC_PC3 + gender, data = dados)
+
+################################################################################################################ 
+
+summ_output <- summary(Regress)
+
+n_row_coef <-  nrow(summ_output$coef)
+Sample_size <- summ_output$df[2] + n_row_coef
+
+VIF(Regress) # Multicollinearity test (VIFs)
+
+ols_coll_diag(Regress) # Multicollinearity test (VIFs)
+ols_test_breusch_pagan(Regress) # Test of Homo/Heteroskedasticity
+ols_plot_dfbetas(Regress)  # Influential observations
+ols_plot_cooksd_bar(Regress)  # Influential observations
+ols_plot_cooksd_chart(Regress)   # Influential observations
+ols_plot_resid_stand(Regress)   # Influential observations
+ols_plot_resid_lev(Regress)   # Influential observations
+ols_plot_resid_pot(Regress)   # Influential observations
+
+##########       identify outliers      ##############
+cooksd <- cooks.distance(Regress)
+influential <- as.numeric(names(cooksd)[(cooksd > (4/Sample_size))]) 
+
+#################    Formatted Tables   #################################
+tab_model(Regress)
+
+
+#######################  Graphing Coefficients and CIs #################### 
+
+dwplot(Regress)
+coefplot(Regress) 
+
+plot_summs(Regress, scale = TRUE, plot.distributions = TRUE, inner_ci_level = .9)
+
+
+
+
+title_name <- "Y ~ ZX + ePRS + ePRS x A_index + PC_cel + PC_pop + gender"  
+
+temp_inter_plot <- interact_plot(Regress, pred = "A_index", modx = "ePRS"
+                                 ,modx.values = "plus-minus", main.title = title_name)
+ggsave(temp_inter_plot, file=paste0("/data1/meaneylab/gsanda/MAVAN/interact_plot_", title_name ,".png"), width = 14, height = 10, units = "cm")
+
+
+temp_plot_model <- plot_model(Regress, type = "pred", terms = c("ePRS [all]", "A_index"), title = title_name)
+ggsave(temp_plot_model, file=paste0("/data1/meaneylab/gsanda/MAVAN/plot_model_", title_name ,".png"), width = 14, height = 10, units = "cm")
+dados$Y_pred <- NA
+dados$Y_pred <- predict(Regress, newdata= dados)
+gout <- ggplot(dados, aes(y=Y, x=Y_pred)) +
+  geom_point() +
+  labs(y='Actual Values', x='Predicted Values', title=title_name)
+temp_plot <- gout + geom_abline(intercept = 0, slope = 1, color="red", size=1.5)
+
+ggsave(temp_plot, file=paste0("/data1/meaneylab/gsanda/MAVAN/plot_", title_name ,".png"), width = 14, height = 10, units = "cm")
+
+
+zz <- paste0("/data1/meaneylab/gsanda/MAVAN/Summary_",title_name,".txt")
+sink(file = zz)
+print(title_name)
+print(summ(Regress))
+print (summ_output)
+sink()
+
+# 2 ###############################################################################################################       
+
+Regress  <- lm(Y ~ Z_X + ePRS + PC1 + PC2 + PC3 + CC_PC1+ CC_PC2 + CC_PC3 + gender, data = dados)
+
+################################################################################################################ 
+
+summ_output <- summary(Regress)
+
+n_row_coef <-  nrow(summ_output$coef)
+Sample_size <- summ_output$df[2] + n_row_coef
+
+VIF(Regress) # Multicollinearity test (VIFs)
+
+ols_coll_diag(Regress) # Multicollinearity test (VIFs)
+ols_test_breusch_pagan(Regress) # Test of Homo/Heteroskedasticity
+ols_plot_dfbetas(Regress)  # Influential observations
+ols_plot_cooksd_bar(Regress)  # Influential observations
+ols_plot_cooksd_chart(Regress)   # Influential observations
+ols_plot_resid_stand(Regress)   # Influential observations
+ols_plot_resid_lev(Regress)   # Influential observations
+ols_plot_resid_pot(Regress)   # Influential observations
+
+##########       identify outliers      ##############
+cooksd <- cooks.distance(Regress)
+influential <- as.numeric(names(cooksd)[(cooksd > (4/Sample_size))]) 
+
+#################    Formatted Tables   #################################
+tab_model(Regress)
+
+
+#######################  Graphing Coefficients and CIs #################### 
+
+dwplot(Regress)
+coefplot(Regress) 
+
+plot_summs(Regress, scale = TRUE, plot.distributions = TRUE, inner_ci_level = .9)
+
+
+
+
+title_name <- "Y ~ ZX + ePRS +  PC_cel + PC_pop + gender" 
+
+dados$Y_pred <- NA
+dados$Y_pred <- predict(Regress, newdata= dados)
+gout <- ggplot(dados, aes(y=Y, x=Y_pred)) +
+  geom_point() +
+  labs(y='Actual Values', x='Predicted Values', title=title_name)
+temp_plot <- gout + geom_abline(intercept = 0, slope = 1, color="red", size=1.5)
+
+ggsave(temp_plot, file=paste0("/data1/meaneylab/gsanda/MAVAN/plot_", title_name ,".png"), width = 14, height = 10, units = "cm")
+
+
+zz <- paste0("/data1/meaneylab/gsanda/MAVAN/Summary_",title_name,".txt")
+sink(file = zz)
+print(title_name)
+print(summ(Regress))
+print (summ_output)
+sink()
+
+## 3 ##############################################################################################################       
+
+Regress  <- lm(Y ~ ePRS * A_index + PC1 + PC2 + PC3 + CC_PC1+ CC_PC2 + CC_PC3 + gender, data = dados)
+
+################################################################################################################ 
+
+summ_output <- summary(Regress)
+
+n_row_coef <-  nrow(summ_output$coef)
+Sample_size <- summ_output$df[2] + n_row_coef
+
+VIF(Regress) # Multicollinearity test (VIFs)
+
+ols_coll_diag(Regress) # Multicollinearity test (VIFs)
+ols_test_breusch_pagan(Regress) # Test of Homo/Heteroskedasticity
+ols_plot_dfbetas(Regress)  # Influential observations
+ols_plot_cooksd_bar(Regress)  # Influential observations
+ols_plot_cooksd_chart(Regress)   # Influential observations
+ols_plot_resid_stand(Regress)   # Influential observations
+ols_plot_resid_lev(Regress)   # Influential observations
+ols_plot_resid_pot(Regress)   # Influential observations
+
+##########       identify outliers      ##############
+cooksd <- cooks.distance(Regress)
+influential <- as.numeric(names(cooksd)[(cooksd > (4/Sample_size))]) 
+
+#################    Formatted Tables   #################################
+tab_model(Regress)
+
+
+#######################  Graphing Coefficients and CIs #################### 
+
+dwplot(Regress)
+coefplot(Regress) 
+
+plot_summs(Regress, scale = TRUE, plot.distributions = TRUE, inner_ci_level = .9)
+
+
+title_name <- "Y ~ ePRS x A_index + PC_cel + PC_pop + gender" 
+
+dados$Y_pred <- NA
+dados$Y_pred <- predict(Regress, newdata= dados)
+gout <- ggplot(dados, aes(y=Y, x=Y_pred)) +
+  geom_point() +
+  labs(y='Actual Values', x='Predicted Values', title=title_name)
+temp_plot <- gout + geom_abline(intercept = 0, slope = 1, color="red", size=1.5)
+
+ggsave(temp_plot, file=paste0("/data1/meaneylab/gsanda/MAVAN/plot_", title_name ,".png"), width = 14, height = 10, units = "cm")
+
+
+zz <- paste0("/data1/meaneylab/gsanda/MAVAN/Summary_",title_name,".txt")
+sink(file = zz)
+print(title_name)
+print(summ(Regress))
+print (summ_output)
+sink()
+
+## 4 ##############################################################################################################       
+
+Regress  <- lm(Y ~ Z_X + PC1 + PC2 + PC3 + CC_PC1+ CC_PC2 + CC_PC3 + gender, data = dados)
+
+################################################################################################################ 
+
+summ_output <- summary(Regress)
+
+n_row_coef <-  nrow(summ_output$coef)
+Sample_size <- summ_output$df[2] + n_row_coef
+
+VIF(Regress) # Multicollinearity test (VIFs)
+
+ols_coll_diag(Regress) # Multicollinearity test (VIFs)
+ols_test_breusch_pagan(Regress) # Test of Homo/Heteroskedasticity
+ols_plot_dfbetas(Regress)  # Influential observations
+ols_plot_cooksd_bar(Regress)  # Influential observations
+ols_plot_cooksd_chart(Regress)   # Influential observations
+ols_plot_resid_stand(Regress)   # Influential observations
+ols_plot_resid_lev(Regress)   # Influential observations
+ols_plot_resid_pot(Regress)   # Influential observations
+
+##########       identify outliers      ##############
+cooksd <- cooks.distance(Regress)
+influential <- as.numeric(names(cooksd)[(cooksd > (4/Sample_size))]) 
+
+#################    Formatted Tables   #################################
+tab_model(Regress)
+
+
+#######################  Graphing Coefficients and CIs #################### 
+
+dwplot(Regress)
+coefplot(Regress) 
+
+plot_summs(Regress, scale = TRUE, plot.distributions = TRUE, inner_ci_level = .9)
+
+
+
+
+title_name <- "Y ~ ZX + PC_cel + PC_pop + gender" 
+
+dados$Y_pred <- NA
+dados$Y_pred <- predict(Regress, newdata= dados)
+gout <- ggplot(dados, aes(y=Y, x=Y_pred)) +
+  geom_point() +
+  labs(y='Actual Values', x='Predicted Values', title=title_name)
+temp_plot <- gout + geom_abline(intercept = 0, slope = 1, color="red", size=1.5)
+
+ggsave(temp_plot, file=paste0("/data1/meaneylab/gsanda/MAVAN/plot_", title_name ,".png"), width = 14, height = 10, units = "cm")
+
+
+zz <- paste0("/data1/meaneylab/gsanda/MAVAN/Summary_",title_name,".txt")
+sink(file = zz)
+print(title_name)
+print(summ(Regress))
+print (summ_output)
+sink()
+
+## 5 ##############################################################################################################       
+
+Regress  <- lm(Y ~ ePRS + PC1 + PC2 + PC3 + CC_PC1+ CC_PC2 + CC_PC3 + gender, data = dados)
+
+################################################################################################################ 
+
+summ_output <- summary(Regress)
+
+n_row_coef <-  nrow(summ_output$coef)
+Sample_size <- summ_output$df[2] + n_row_coef
+
+VIF(Regress) # Multicollinearity test (VIFs)
+
+ols_coll_diag(Regress) # Multicollinearity test (VIFs)
+ols_test_breusch_pagan(Regress) # Test of Homo/Heteroskedasticity
+ols_plot_dfbetas(Regress)  # Influential observations
+ols_plot_cooksd_bar(Regress)  # Influential observations
+ols_plot_cooksd_chart(Regress)   # Influential observations
+ols_plot_resid_stand(Regress)   # Influential observations
+ols_plot_resid_lev(Regress)   # Influential observations
+ols_plot_resid_pot(Regress)   # Influential observations
+
+##########       identify outliers      ##############
+cooksd <- cooks.distance(Regress)
+influential <- as.numeric(names(cooksd)[(cooksd > (4/Sample_size))]) 
+
+#################    Formatted Tables   #################################
+tab_model(Regress)
+
+
+#######################  Graphing Coefficients and CIs #################### 
+
+dwplot(Regress)
+coefplot(Regress) 
+
+plot_summs(Regress, scale = TRUE, plot.distributions = TRUE, inner_ci_level = .9)
+
+
+title_name <- "Y ~ ePRS + PC_cel + PC_pop + gender" 
+
+dados$Y_pred <- NA
+dados$Y_pred <- predict(Regress, newdata= dados)
+gout <- ggplot(dados, aes(y=Y, x=Y_pred)) +
+  geom_point() +
+  labs(y='Actual Values', x='Predicted Values', title=title_name)
+temp_plot <- gout + geom_abline(intercept = 0, slope = 1, color="red", size=1.5)
+
+ggsave(temp_plot, file=paste0("/data1/meaneylab/gsanda/MAVAN/plot_", title_name ,".png"), width = 14, height = 10, units = "cm")
+
+
+zz <- paste0("/data1/meaneylab/gsanda/MAVAN/Summary_",title_name,".txt")
+sink(file = zz)
+print(title_name)
+print(summ(Regress))
+print (summ_output)
+sink()
+
+
+regress.mod1 <- lm(Y ~ Z_X + ePRS * A_index + PC1 + PC2 + PC3 + CC_PC1+ CC_PC2 + CC_PC3 + gender, data = dados)
+regress.mod2 <- lm(Y ~ Z_X + ePRS + PC1 + PC2 + PC3 + CC_PC1+ CC_PC2 + CC_PC3 + gender, data = dados)
+regress.mod3 <- lm(Y ~ ePRS * A_index + PC1 + PC2 + PC3 + CC_PC1+ CC_PC2 + CC_PC3 + gender, data = dados)
+regress.mod4 <- lm(Y ~ Z_X + PC1 + PC2 + PC3 + CC_PC1+ CC_PC2 + CC_PC3 + gender, data = dados)
+regress.mod5 <- lm(Y ~ ePRS + PC1 + PC2 + PC3 + CC_PC1+ CC_PC2 + CC_PC3 + gender, data = dados)
+
+
+# Compare models
+
+anova1 <- anova(regress.mod5, regress.mod2)
+anova2 <- anova(regress.mod4, regress.mod2)
+anova3 <- anova(regress.mod5, regress.mod3)
+anova4 <- anova(regress.mod3, regress.mod1)
+anova5 <- anova(regress.mod2, regress.mod1)
+
+
+zz <- paste0("/data1/meaneylab/gsanda/MAVAN/Summary_Anova.txt")
+sink(file = zz)
+print(anova1)
+print(anova2)
+print(anova3)
+print(anova4)
+print(anova5)
+
+sink()
+
+Sys.sleep(2)
+
