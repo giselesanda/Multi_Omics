@@ -8,3 +8,8 @@ The variables in the model are:
  - adversity -> prenatal or postnatal adversity score 
  - covariates -> PC buccal cells or PC blood cell types + PC population 
  
+We put the script for each cohort in their own files 
+- ALSPAC 
+- GUSTO 
+- MAVAN 
+- UCSF 
